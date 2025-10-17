@@ -18,7 +18,7 @@ export default function HomePage() {
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-semibold tracking-tight">LyricSearch</h1>
         <div className="text-sm text-neutral-500 dark:text-neutral-400">
-          Find songs by lyrics. Powered by AudD. <Link href="https://audd.io/" className="underline" target="_blank">Learn more</Link>
+          Find songs by lyrics. Powered by <Link href="https://genius.com/" className="underline" target="_blank">Genius</Link>.
         </div>
       </header>
 
