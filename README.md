@@ -4,8 +4,9 @@ Find songs by lyrics or phrases, filter by artist, and sort by popularity or oth
 
 ## Prerequisites
 - Node.js 18+
-- AudD API token (required) — [Sign up here](https://dashboard.audd.io/)
-- Spotify Client ID and Secret (optional, for popularity enrichment) — [Get credentials](https://developer.spotify.com/dashboard)
+- **Genius API Token** (required for lyrics search) — [Get token here](https://genius.com/api-clients)
+- AudD API token (optional, for additional metadata) — [Sign up here](https://dashboard.audd.io/)
+- Spotify Client ID and Secret (optional, for popularity enrichment and album art) — [Get credentials](https://developer.spotify.com/dashboard)
 
 ## Setup
 1. Copy `.env.local.example` to `.env.local` and fill in values.
@@ -13,8 +14,8 @@ Find songs by lyrics or phrases, filter by artist, and sort by popularity or oth
 3. Run the dev server: `npm run dev`
 
 ## Environment Variables
-- `AUDD_API_TOKEN` (required) — AudD API token from your dashboard
-- `SPOTIFY_CLIENT_ID` (optional) — Spotify client ID for popularity enrichment
+- `GENIUS_ACCESS_TOKEN` (required) — Genius API token for lyrics search. Get one at [genius.com/api-clients](https://genius.com/api-clients)
+- `SPOTIFY_CLIENT_ID` (optional) — Spotify client ID for popularity enrichment and better album art
 - `SPOTIFY_CLIENT_SECRET` (optional) — Spotify client secret
 
 ## Deployment to Vercel
@@ -54,6 +55,23 @@ Find songs by lyrics or phrases, filter by artist, and sort by popularity or oth
 - Your app will be live at `https://your-project.vercel.app`
 - Update Spotify redirect URI to `https://your-project.vercel.app` (though it's not used by the app)
 - Vercel automatically provisions HTTPS and handles deployments on every push
+
+## How to Get API Keys
+
+### Genius API Token (Required)
+1. Go to [genius.com/api-clients](https://genius.com/api-clients)
+2. Sign in or create an account
+3. Click "New API Client"
+4. Fill in app details (name: "LyricSearch", redirect URI not needed)
+5. Generate an access token
+6. Copy the access token to your `GENIUS_ACCESS_TOKEN` env variable
+
+### Spotify Credentials (Optional)
+1. Go to [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard)
+2. Log in and create a new app
+3. Copy Client ID and Client Secret
+4. Add redirect URI: `http://localhost:3000` (for local) or your Vercel URL
+5. Add credentials to env variables
 
 ## Run
 - Dev server: npm run dev

@@ -12,34 +12,44 @@ export async function GET(req: NextRequest) {
   const sort = searchParams.get('sort') || 'relevance'
 
   if (!q) return Response.json({ error: 'Missing q parameter' }, { status: 400 })
-  const token = process.env.AUDD_API_TOKEN
-  if (!token) {
-    return Response.json({ error: 'Server is not configured with AUDD_API_TOKEN. Please add it to .env.local.' }, { status: 400 })
+  
+  const geniusToken = process.env.GENIUS_ACCESS_TOKEN
+  if (!geniusToken) {
+    return Response.json({ 
+      error: 'Server is not configured with GENIUS_ACCESS_TOKEN. Please add it to your environment variables. Get one at https://genius.com/api-clients' 
+    }, { status: 400 })
   }
 
   try {
-    // AudD doesn't have a public "lyrics search" by phrase documented in the standard endpoint,
-    // but they support returning lyrics with apple_music/spotify and searching by URL/audio.
-    // We'll use their lyrics search parameter via the unofficial 'lyrics' method if available.
-    // Fallback: use the standard recognition with "return=apple_music,spotify" on a sample url is not applicable.
-    // Instead, use their lyrics search endpoint documented in examples: https://api.audd.io/findLyrics/
-    const apiUrl = 'https://api.audd.io/findLyrics/'
-    const body = new URLSearchParams({ q, api_token: token })
-    const res = await fetch(apiUrl, { method: 'POST', body })
-    const json = await res.json()
-    if (!res.ok || json?.status === 'error') {
-      const msg = json?.error?.error_message || 'AudD error'
-      return Response.json({ error: msg }, { status: 502 })
+    // Use Genius API to search for songs by lyrics
+    const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(q)}`
+    const res = await fetch(searchUrl, {
+      headers: { Authorization: `Bearer ${geniusToken}` }
+    })
+    
+    if (!res.ok) {
+      return Response.json({ error: 'Genius API error' }, { status: 502 })
     }
-    const results: any[] = Array.isArray(json?.result) ? json.result : []
-
-    let items: SearchItem[] = results.map((r, idx) => ({
-      id: String(r.id ?? idx),
-      title: r.title || r.full_title || r.song_title || 'Unknown',
-      artist: r.artist || r.artist_name || 'Unknown',
-      snippet: r.text || r.snippet || undefined,
-      links: { url: r.song_link || r.url }
-    }))
+    
+    const json = await res.json()
+    const hits = json?.response?.hits || []
+    
+    // Map Genius results to our format
+    let items: SearchItem[] = hits.map((hit: any, idx: number) => {
+      const song = hit.result
+      return {
+        id: String(song.id ?? idx),
+        title: song.title || song.full_title || 'Unknown',
+        artist: song.primary_artist?.name || song.artist_names || 'Unknown',
+        snippet: song.lyrics_snippet || undefined, // Genius doesn't return full lyrics in search, only snippets
+        albumArt: song.song_art_image_thumbnail_url || song.header_image_thumbnail_url || undefined,
+        album: song.album?.name || undefined,
+        releaseDate: song.release_date_for_display || undefined,
+        links: { 
+          url: song.url 
+        }
+      }
+    })
 
     // Filter by artists if provided
     const filterArtists = artistsParam
