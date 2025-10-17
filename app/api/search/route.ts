@@ -55,7 +55,13 @@ export async function GET(req: NextRequest) {
       const enriched = await Promise.all(items.slice(0, 20).map(async (i) => {
         try {
           const info = await searchSpotifyPopularity(i.title, i.artist)
-          return { ...i, popularity: info?.popularity, links: { ...i.links, spotifyUrl: info?.spotifyUrl } }
+          return { 
+            ...i, 
+            popularity: info?.popularity, 
+            albumArt: info?.albumArt,
+            album: info?.album,
+            links: { ...i.links, spotifyUrl: info?.spotifyUrl } 
+          }
         } catch {
           return i
         }

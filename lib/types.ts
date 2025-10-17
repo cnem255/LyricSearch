@@ -3,6 +3,8 @@ export type SearchItem = {
   title: string
   artist: string
   snippet?: string
+  albumArt?: string
+  album?: string
   links?: { url?: string; spotifyUrl?: string; appleMusicUrl?: string }
   popularity?: number
   releaseDate?: string

@@ -23,7 +23,7 @@ export async function getSpotifyToken(): Promise<string | null> {
   return cachedToken.token
 }
 
-export async function searchSpotifyPopularity(q: string, artist: string): Promise<{ popularity?: number; spotifyUrl?: string } | null> {
+export async function searchSpotifyPopularity(q: string, artist: string): Promise<{ popularity?: number; spotifyUrl?: string; albumArt?: string; album?: string } | null> {
   const token = await getSpotifyToken()
   if (!token) return null
   const spQ = encodeURIComponent(`${q} artist:${artist}`)
@@ -34,5 +34,10 @@ export async function searchSpotifyPopularity(q: string, artist: string): Promis
   const data = await res.json()
   const item = data?.tracks?.items?.[0]
   if (!item) return null
-  return { popularity: item.popularity as number, spotifyUrl: item.external_urls?.spotify as string | undefined }
+  return { 
+    popularity: item.popularity as number, 
+    spotifyUrl: item.external_urls?.spotify as string | undefined,
+    albumArt: item.album?.images?.[0]?.url as string | undefined,
+    album: item.album?.name as string | undefined
+  }
 }
