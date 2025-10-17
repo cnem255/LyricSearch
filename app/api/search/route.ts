@@ -35,21 +35,58 @@ export async function GET(req: NextRequest) {
     const hits = json?.response?.hits || []
     
     // Map Genius results to our format
-    let items: SearchItem[] = hits.map((hit: any, idx: number) => {
+    // For each hit, fetch the Genius song page and extract a lyric snippet containing the query
+    async function fetchSnippet(songUrl: string, query: string): Promise<string | undefined> {
+      try {
+        const pageRes = await fetch(songUrl)
+        if (!pageRes.ok) return undefined
+        const html = await pageRes.text()
+        // Genius lyrics are inside <div data-lyrics-container="true">...</div>
+        const matches = Array.from(html.matchAll(/<div[^>]*data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/gi))
+        let lyrics = matches.map(m => m[1])
+          .join('\n')
+          .replace(/<br\s*\/?>(\s*)/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&amp;/g, '&')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .trim()
+        if (!lyrics) return undefined
+        // Find a snippet around the query
+        const idx = lyrics.toLowerCase().indexOf(query.toLowerCase())
+        if (idx !== -1) {
+          const start = Math.max(0, idx - 60)
+          const end = Math.min(lyrics.length, idx + query.length + 60)
+          return (start > 0 ? '...' : '') + lyrics.substring(start, end) + (end < lyrics.length ? '...' : '')
+        }
+        // Fallback: first 120 chars
+        return lyrics.substring(0, 120) + (lyrics.length > 120 ? '...' : '')
+      } catch {
+        return undefined
+      }
+    }
+
+    let items: SearchItem[] = []
+    for (let idx = 0; idx < hits.length; idx++) {
+      const hit = hits[idx]
       const song = hit.result
-      return {
+      let snippet: string | undefined = undefined
+      if (song.url) {
+        snippet = await fetchSnippet(song.url, q)
+      }
+      items.push({
         id: String(song.id ?? idx),
         title: song.title || song.full_title || 'Unknown',
         artist: song.primary_artist?.name || song.artist_names || 'Unknown',
-        snippet: song.lyrics_snippet || undefined, // Genius doesn't return full lyrics in search, only snippets
+        snippet,
         albumArt: song.song_art_image_thumbnail_url || song.header_image_thumbnail_url || undefined,
         album: song.album?.name || undefined,
         releaseDate: song.release_date_for_display || undefined,
-        links: { 
-          url: song.url 
-        }
-      }
-    })
+        links: { url: song.url }
+      })
+    }
 
     // Filter by artists if provided
     const filterArtists = artistsParam
